@@ -6,9 +6,9 @@ struct
 	and protoType = TDouble | TFloat | TInt32 | TInt64
 					   | TUInt32 | TUInt64 | TSInt32 | TSInt64
 					   | TFixed32 | TFixed64 | TSFixed32 | TSFixed64
-					   | TBool | TString | TBytes 
+					   | TBool | TString | TBytes
 					   | TProtoMessage of protoMessageDef
-					   
+
 	and protoValue = Double of real | Float of real | Int32 of int | Int64 of int
 					   | UInt32 of int | UInt64 of int | SInt32 of int | SInt64 of int
 					   | Fixed32 of int| Fixed64 of int | SFixed32 of int | SFixed64 of int
@@ -48,21 +48,21 @@ struct
 	  | typeIsVarintEncoded(TUInt64) = true
 	  | typeIsVarintEncoded(TBool) = true
 	  | typeIsVarintEncoded _ = false
-	  
+
 	fun typeIsZigZagEncoded(TSInt32) = true
 	  | typeIsZigZagEncoded(TSInt64) = true
 	  | typeIsZigZagEncoded _ = false
-	  
+
 	fun typeIsFixedEncoded32(TFixed32) = true
 	  | typeIsFixedEncoded32(TFloat) = true
 	  | typeIsFixedEncoded32(TSFixed32) = true
 	  | typeIsFixedEncoded32 _ = false
-	  
+
 	fun typeIsFixedEncoded64(TFixed32) = true
 	  | typeIsFixedEncoded64(TFloat) = true
 	  | typeIsFixedEncoded64(TSFixed32) = true
 	  | typeIsFixedEncoded64 _ = false
-	  
+
 	fun typeIsLenEncoded(TBytes) = true
 	  | typeIsLenEncoded(TString) = true
 	  | typeIsLenEncoded _ = false
@@ -70,13 +70,13 @@ struct
 	fun messageDefName(MessageDef(n,_,_)) = n
 	fun fieldDef(Field(rule,value,name,key)) = FieldDef(rule,fieldType value,name,key)
 	fun fieldFromDef(FieldDef(rule,_,name,key),x) = Field(rule,x,name,key)
-	
+
 	fun messageDef(Message(name,opt,fields)) = MessageDef(name,opt,map fieldDef fields)
-	
-	
+
+
 	(*Debug Stuff*)
 	fun emptyMessage n = Message(n,[],[])
-	
+
 	fun bareValue (TDouble) = Double 0.0
 	  | bareValue (TFloat) = Float 0.0
 	  | bareValue (TInt32) = Int32 0
@@ -95,13 +95,13 @@ struct
 	  | bareValue (TProtoMessage(MessageDef(name,_,_))) = ProtoMessageValue(emptyMessage name)
 	fun bareField(FieldDef(rule,value,name,key)) = Field(rule,bareValue(value),name,key)
     fun bareMessage(MessageDef(name,opt,fields)) = Message(name,opt,map bareField fields)
-			
+
 	fun simpleMessage(x) = Message("TestMessage",[],[x])
 	fun simpleIntMessage(v,n,k) = simpleMessage(Field(Required,Int32(v),n,k))
 	val sampleMessage = simpleIntMessage(5,"test",1)
 	val sampleMessage2 = Message("Sample2",[],[(Field(Required,Int32(0),"first",1)),
 											   (Field(Required,String("bla"),"second",2))])
-	fun fold _ x [] = x 
+	fun fold _ x [] = x
       | fold _ _ (x::[]) = x
 	  | fold f default (x::y::ls) = fold f default (f(x,y)::ls)
 	fun lineBreakConcat (x,y) = String.concat[x,"\n",y]
@@ -121,21 +121,21 @@ struct
 		|	String x => (x)
 		|	Bytes x => (String.concat(map Word8.toString x))
 		|	ProtoMessageValue x => messageToString x)
-	and fieldToString (Field(_,value,name,key)) = 
+	and fieldToString (Field(_,value,name,key)) =
 		String.concat[Int.toString key,":",name," = ",valueToString value,";"]
-	and messageToString (Message(name,_,fields)) =  
+	and messageToString (Message(name,_,fields)) =
 		let val strFields = map fieldToString fields
 			val body = fold lineBreakConcat "" strFields in
 				String.concat[name,"{\n",body,"\n}"]
 			end
 	fun prettyPrintMsg x = (print (messageToString x); print "\n")
-	
+
 end
 (*This structure contains type checked access*)
-structure ProtoAccess = 
+structure ProtoAccess =
 struct
 	open Proto
-	fun getNativeIntValue(p) = 
+	fun getNativeIntValue(p) =
 		case p of
 			Int32 x => x
 		|	Int64 x => x
@@ -148,23 +148,23 @@ struct
 		|	SFixed32 x => x
 		|	SFixed64 x => x
 		|	_ => raise WrongFieldType
-	
+
 	fun getNativeRealValue(Double x) = x
 	  | getNativeRealValue(Float x) = x
 	  | getNativeRealValue _ = raise WrongFieldType
-	
+
 	fun getNativeStringValue(String x) = x
 	  | getNativeStringValue _ = raise WrongFieldType
-	
+
 	fun getNativeBytesValue (Bytes x) = x
 	  | getNativeBytesValue _ = raise WrongFieldType
-	  
+
 	fun getNativeBoolValue (Bool x) = x
 	  | getNativeBoolValue _ = raise WrongFieldType
-	  
+
 	fun getNativeProtoMessageValue(ProtoMessageValue x) = x
 	  | getNativeProtoMessageValue _ = raise WrongFieldType
-	
+
 	fun setNativeIntValue x p =
 		case p of
 			Int32 _ => Int32 x
@@ -178,55 +178,55 @@ struct
 		|	SFixed32 _ => SFixed32 x
 		|	SFixed64 _ => SFixed64 x
 		|	_ => raise WrongFieldType
-	
+
 	fun setNativeRealValue x p =
-		case p of 
+		case p of
 			Float _ => Float x
 		|	Double _ => Double x
 		|	_	=> raise WrongFieldType
-	
+
 	fun setNativeStringValue x (String _) = String x
 	  | setNativeStringValue _ _ = raise WrongFieldType
-	  
+
 	fun setNativeBytesValue x (Bytes _) = Bytes x
 	  | setNativeBytesValue _ _ = raise WrongFieldType
-	
+
 	fun setNativeBoolValue x (Bool _) = Bool x
       | setNativeBoolValue _ _ = raise WrongFieldType
 
 	fun setNativeProtoMessageValue x (ProtoMessageValue _) = ProtoMessageValue x
 	  | setNativeProtoMessageValue _ _ = raise WrongFieldType
-	  
+
 	fun getFieldValueInList (_,_,[]) = raise NoSuchField
-	  | getFieldValueInList (f,name,field::fields) = 
+	  | getFieldValueInList (f,name,field::fields) =
 		let val Field(_,value,n,_) = field in
 			case n = name of
 				false => getFieldValueInList(f,name,fields)
 			|	true => f(value)
 		end
 	fun setFieldValueInList (_,_,[]) = raise NoSuchField
-	  | setFieldValueInList (f,name,(Field(r,v,n,key))::fields) = 
+	  | setFieldValueInList (f,name,(Field(r,v,n,key))::fields) =
 			case name = n of
 				false => Field(r,v,n,key)::(setFieldValueInList(f,name,fields))
 			|	true => Field(r,f(v),n,key)::fields
 	fun getFieldValue f (n,Message(_,_,l)) = getFieldValueInList(f,n,l)
 	fun setFieldValue f (n,Message(x,y,l)) = Message(x,y,setFieldValueInList(f,n,l))
-	
+
 	fun getIntValue x = getFieldValue (getNativeIntValue) x
 	fun setIntValue (n,v,m) = setFieldValue (setNativeIntValue v) (n,m)
-	
+
 	fun getRealValue x = getFieldValue (getNativeRealValue) x
 	fun setRealValue (n,v,m) = setFieldValue (setNativeRealValue v) (n,m)
-	
+
 	fun getStringValue x = getFieldValue (getNativeStringValue) x
 	fun setStringValue (n,v,m) = setFieldValue (setNativeStringValue v) (n,m)
-	
+
 	fun getBoolValue x = getFieldValue (getNativeBoolValue) x
 	fun setBoolValue (n,v,m) = setFieldValue (setNativeBoolValue v) (n,m)
-	
+
 	fun getBytesValue x = getFieldValue (getNativeBytesValue) x
 	fun setBytesValue (n,v,m) = setFieldValue (setNativeBytesValue v) (n,m)
-	
+
 	fun getProtoMessageValue x = getFieldValue (getNativeProtoMessageValue) x
 	fun setProtoMessageValue (n,v,m) = setFieldValue (setNativeProtoMessageValue v) (n,m)
 end :
@@ -237,7 +237,7 @@ sig
 	val setIntValue : string * int * Proto.protoMessage -> Proto.protoMessage
 	val getRealValue : string * Proto.protoMessage -> real
 	val setRealValue : string * real * Proto.protoMessage -> Proto.protoMessage
-	val getStringValue : string * Proto.protoMessage -> string 
+	val getStringValue : string * Proto.protoMessage -> string
 	val setStringValue : string * string * Proto.protoMessage -> Proto.protoMessage
 	val getBoolValue : string * Proto.protoMessage -> bool
 	val setBoolValue : string * bool * Proto.protoMessage -> Proto.protoMessage
