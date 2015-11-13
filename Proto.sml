@@ -18,6 +18,8 @@ struct
 	and optionalEntry = Nothing (* For now at least*)
 	and protoMessage = Message of string * optionalEntry list * protoField list
 	and protoMessageDef = MessageDef of string * optionalEntry list * protoFieldDef list
+	and rpcSignature = RpcSignature of string * protoMessageDef * protoMessageDef
+	and serviceDef = Service of rpcSignature list
 
 	fun protoFieldDefKey(FieldDef(_,_,_,k)) = k
 	fun protoFieldKey(Field(_,_,_,k)) = k
