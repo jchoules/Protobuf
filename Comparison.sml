@@ -3,9 +3,9 @@ exception TestFailedException;
 open Lens;
 open ProtoLens;
 val source = String.concat
-["message Country = { required string countryName = 1; } ",
- "message Maker = { required string makerName = 1; required Country makerCountry = 2; }",
- "message Car = { required string modelName = 1; required int32 year = 2; required Maker modelMaker = 3; }"]
+["message Country { required string countryName = 1; } ",
+ "message Maker { required string makerName = 1; required Country makerCountry = 2; }",
+ "message Car { required string modelName = 1; required int32 year = 2; required Maker modelMaker = 3; }"]
 
 val result = ProtoParser.parseMessages(source)
 val (countryDef,makerDef,carDef) = case result of

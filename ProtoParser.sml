@@ -32,7 +32,7 @@ struct
 						   (seq(parseOptionType,parseKeyVal))
 	val parseFields = many(ws(parseField))
 	val messageBody = wrap(symbol #"{",ws(parseFields),symbol #"}")
-	val messageParser = precede(ws(keyword "message"),seq(ws(identifier),precede(ws(symbol #"="),messageBody)))
+	val messageParser = precede(ws(keyword "message"),seq(ws(identifier),messageBody))
 	val message = lift (fn (name,fields) => MessageDef(name,[],fields)) messageParser
 	val messages = many(ws(message))
 	fun replaceWithProperMessage(message,messages) =
@@ -53,7 +53,7 @@ struct
 								Failure x => Failure x
 							|	Success(x) => Success(fixMessages x x) 
 									handle UndefinedMessage(m) => Failure(String.concat["Undefined message",m])
-	val test = parseMessages("message Bla = { required string a = 1;} message Test = { required Bla t = 1;}")
+	val test = parseMessages("message Bla { required string a = 1;} message Test { required Bla t = 1;}")
 end :
 sig
 	val parseMessages : string -> (Proto.protoMessageDef list,string) Parser.result
