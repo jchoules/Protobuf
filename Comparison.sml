@@ -49,4 +49,4 @@ val car2 = modify (fn x => x + 1) year car
 (*And now update the maker*)
 val car3 = set (modelMaker +> makerName) ("FCA",car2)
 (*Apped ! to country name*)
-val car4 = modify (fn x => String.concat[x,"!"]) (modelMaker +> makerCountry +> countryName) 
+val car4 = modify (fn x => String.concat[x,"!"]) (modelMaker +> makerCountry +> countryName)

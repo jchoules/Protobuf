@@ -4,7 +4,7 @@ struct
 	open Proto
 	exception UndefinedMessage of string
 	fun toType s =
-		case s of 
+		case s of
 			"int32" => TInt32
 		|	"int64" => TInt64
 		|	"uint32" => TUInt32
@@ -28,7 +28,7 @@ struct
 					ws(symbol #";"))
 	val parseKeyVal = seq(ws(identifier),parseKey)
 	val parseOptionType = seq(ws(word),ws(parseType))
-	val parseField = lift (fn((opt,t),(name,key)) => FieldDef(Required,t,name,key)) 
+	val parseField = lift (fn((opt,t),(name,key)) => FieldDef(Required,t,name,key))
 						   (seq(parseOptionType,parseKeyVal))
 	val parseFields = many(ws(parseField))
 	val messageBody = wrap(symbol #"{",ws(parseFields),symbol #"}")
@@ -51,12 +51,10 @@ struct
 	fun fixMessages m ms = map (fixMessage m) ms
 	fun parseMessages str = case parse(messages,str) of
 								Failure x => Failure x
-							|	Success(x) => Success(fixMessages x x) 
+							|	Success(x) => Success(fixMessages x x)
 									handle UndefinedMessage(m) => Failure(String.concat["Undefined message",m])
 	val test = parseMessages("message Bla { required string a = 1;} message Test { required Bla t = 1;}")
 end :
 sig
 	val parseMessages : string -> (Proto.protoMessageDef list,string) Parser.result
 end
-
- 

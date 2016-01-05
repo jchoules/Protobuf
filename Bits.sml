@@ -9,7 +9,7 @@ struct
 	  | fromTemplate(n,acc,x) = fromTemplate(n-1,Word8.fromInt(x)::acc,~>>(x,0w8))
 	fun fromInt32(x) = fromTemplate(4,[],x)
 	fun fromInt64(x) = fromTemplate(8,[],x)
-	fun toInt xs = 
+	fun toInt xs =
 		let fun inner([],v) = v
 		      | inner((x::xs),v) = inner(xs,orb(<<(v,0w8),Word8.toInt(x)))
 		in
