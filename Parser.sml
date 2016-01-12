@@ -16,6 +16,7 @@ struct
 	fun resetColNo (x,_) = (x,0)
 	datatype parserState = PS of sourceStream * position
 	datatype ('a,'b) result = Success of 'a  | Failure of 'b
+	datatype ('a,'b) alternative = Left of 'a | Right of 'b
 	type 'a parser = parserState -> ('a * parserState,string)result
 	fun id x = x
 	fun onSuccess f r = case r of
@@ -49,12 +50,6 @@ struct
 		|	Success (x,rest) => f(x) rest
 	fun always state = Success((),state)
 	fun never _ = Failure("Failure parsed")
-	fun alt (p1,p2) state = 
-		case p1 state of
-			Success x => Success x
-		|	Failure y => (case p2 state of
-							Success x => Success x
-						  |	Failure z => Failure (String.concat[y, " or ", z]))
 	fun seq (p1,p2) state =
 		case p1 state of
 			Failure x => Failure x
@@ -65,6 +60,12 @@ struct
 		case p1 state of
 			Success (x,rest) => Success (f x,rest)
 		|	Failure x => Failure x
+	fun alt (p1,p2) state =
+		case lift Left p1 state of
+			Success x => Success x
+		|	Failure y => (case lift Right p2 state of
+							Success x => Success x
+						  |	Failure z => Failure (String.concat[y, " or ", z]))
 	fun precede (p1,p2) = lift #2 (seq(p1,p2))
 	fun follow (p1,p2) = lift #1 (seq(p1,p2))
 	fun wrap(p1,p2,p3) = follow(precede(p1,p2),p3)
@@ -100,6 +101,17 @@ struct
 		case (many1 p) state of 
 			Success x => Success x
 		|	Failure _ => Success([],state)
+	local
+		fun split [] = ([], [])
+		|	split (x::xs) =
+				let val (ls, rs) = split xs in
+					case x of
+						Left l => (l::ls, rs)
+					|	Right r => (ls, r::rs)
+				end
+	in
+		fun manyAlt (p1,p2) = lift split (many(alt(p1,p2)))
+	end
 	fun maybe p state =
 			case p state of 
 				Success (x,rest) => Success(SOME(x),rest)
@@ -176,6 +188,7 @@ end :
 sig
 	type parserState
 	datatype ('a,'b) result = Success of 'a | Failure of 'b
+	datatype ('a,'b) alternative = Left of 'a | Right of 'b
 	type 'a parser = parserState -> ('a * parserState,string)result
 	val parse : ('a parser * string) -> ('a, string) result
 	val debugParse : ('a parser * string) -> ('a * parserState, string) result
@@ -187,7 +200,7 @@ sig
 	val anySymbol : char parser
 	val pSymbol : (char -> bool) * string -> char parser
 	val symbol : char -> char parser
-	val alt : 'a parser * 'a parser -> 'a parser
+	val alt : 'a parser * 'b parser -> ('a,'b) alternative parser
 	val seq : 'a parser * 'b parser -> ('a * 'b) parser
 	val lift :('a -> 'b) -> 'a parser -> 'b parser
 	val precede : 'a parser * 'b parser -> 'b parser
@@ -197,6 +210,7 @@ sig
 	val until : 'a parser * 'b parser -> ('b list) parser
 	val many1 : 'a parser -> ('a list)parser
 	val many : 'a parser -> ('a list) parser
+	val manyAlt : 'a parser * 'b parser -> ('a list * 'b list) parser
 	val sepBy : 'a parser * 'b parser -> ('a list) parser
 	val transform : ('a -> ('b,string) result) -> 'a parser -> 'b parser 
 	val separate : 'a parser * 'b parser * 'c parser -> ('a * 'c) parser
