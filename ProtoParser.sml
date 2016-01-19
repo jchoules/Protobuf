@@ -54,7 +54,7 @@ struct
 								Failure x => Failure x
 							|	Success(x) => Success(fixMessages x x)
 									handle UndefinedMessage(m) => Failure(String.concat["Undefined message",m])
-	val test = parseMessages("message Bla { required string a = 1;} message Test { required Bla t = 1;}")
+	val messageParseTest = parseMessages("message Bla { required string a = 1;} message Test { required Bla t = 1;}")
 end :
 sig
 	val parseMessages : string -> (Proto.protoMessageDef list,string) Parser.result
