@@ -35,11 +35,12 @@ struct
 	val messageParser = precede(ws(keyword "message"),seq(ws(identifier),messageBody))
 	val message = lift (fn (name,fields) => MessageDef(name,[],fields)) messageParser
 	val messages = many(ws(message))
+	(* TODO: This will hang if messages are (mutually) recursively defined. *)
 	fun replaceWithProperMessage(message,messages) =
 		case List.find (fn x => messageDefName(message) = messageDefName(x)) messages of
-			SOME(x) => x
+			SOME(x) => fixMessage messages x
 		|	NONE => raise UndefinedMessage(messageDefName(message))
-	fun fixField messages field =
+	and fixField messages field =
 		let val FieldDef(opt,t,name,key) = field in
 			case t of
 				TProtoMessage msg => let val replacement = TProtoMessage(replaceWithProperMessage(msg,messages)) in
@@ -47,7 +48,7 @@ struct
 															end
 			|	_ => field
 		end
-	fun fixMessage m(MessageDef(n,opt,fields)) = MessageDef(n,opt,map (fixField m) fields)
+	and fixMessage m(MessageDef(n,opt,fields)) = MessageDef(n,opt,map (fixField m) fields)
 	fun fixMessages m ms = map (fixMessage m) ms
 	fun parseMessages str = case parse(messages,str) of
 								Failure x => Failure x
