@@ -3,6 +3,7 @@ struct
 	open Parser
 	open Proto
 	exception UndefinedMessage of string
+	exception PrimitiveArgOrReturn of string
 	fun toType s =
 		case s of
 			"int32" => TInt32
@@ -55,6 +56,58 @@ struct
 							|	Success(x) => Success(fixMessages x x)
 									handle UndefinedMessage(m) => Failure(String.concat["Undefined message",m])
 	val messageParseTest = parseMessages("message Bla { required string a = 1;} message Test { required Bla t = 1;}")
+
+	val rpcParser = precede(
+						ws(keyword("rpc")),
+					seq(
+						ws(identifier),
+					seq(
+						wrap(symbol #"(",
+							ws(parseType),
+						symbol #")"),
+					precede(
+						ws(keyword("returns")),
+					follow(
+						wrap(symbol #"(",
+							ws(parseType),
+						symbol #")"),
+						ws(symbol #";"))))))
+	val rpc = lift (fn (name, (arg, returns)) => RpcSignature(name, arg, returns)) rpcParser
+	val rpcs = many(ws(rpc))
+	val serviceBody = wrap(symbol #"{",ws(rpcs),symbol #"}")
+	val serviceParser = precede(
+							ws(keyword("service")),
+						seq(
+							ws(identifier),
+							serviceBody))
+	val service = lift Service serviceParser
+	val services = many(ws(service))
+	fun fixRpc messages rpc =
+		let val RpcSignature(name, arg, returns) = rpc in
+			case (arg, returns) of
+				(TProtoMessage argMsg, TProtoMessage retMsg) =>
+					let
+						val argReplacement = TProtoMessage(replaceWithProperMessage(argMsg,messages))
+						val retReplacement = TProtoMessage(replaceWithProperMessage(retMsg,messages))
+					in
+						RpcSignature(name, argReplacement, retReplacement)
+					end
+			| _ => raise(PrimitiveArgOrReturn(name))
+		end
+	fun fixRpcs messages rpcs = map (fixRpc messages) rpcs
+	fun fixService messages (Service(name, rpcs)) = Service(name, fixRpcs messages rpcs)
+	fun fixServices messages services = map (fixService messages) services
+
+	val messagesAndServices = manyAlt(ws(message), ws(service))
+	fun parseMessagesAndServices str =
+		case parse(messagesAndServices, str) of
+				Failure(x) => Failure(x)
+			|	Success(ms,ss) => let val fixedMs = fixMessages ms ms in
+					Success(fixedMs, fixServices fixedMs ss)
+						handle UndefinedMessage(m) => Failure(String.concat["Undefined message ",m])
+							 | PrimitiveArgOrReturn(n) => Failure(String.concat["Argument and return types of ", n, " cannot be primitive"])
+					 end
+
 end :
 sig
 	val parseMessages : string -> (Proto.protoMessageDef list,string) Parser.result
