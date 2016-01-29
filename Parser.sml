@@ -33,13 +33,13 @@ struct
 	fun withLocation (msg,PS(_,(lineno,colno))) =
 		String.concat [msg," at line: ",Int.toString lineno,", column: ",Int.toString colno]
 	fun printPS (PS((_,x),_)) = print (String.implode x)
-	fun parse (p1,str) = let val state = (makeParserState str) 
+	fun parse (p1,str) = let val state = (makeParserState str)
 							 val result = p1 state in
 							case result of
 								Success(x,_) => Success(x)
 							|	Failure x => Failure(withLocation(x,state))
 						 end
-	fun debugParse (p1,str) = let val state = (makeParserState str) 
+	fun debugParse (p1,str) = let val state = (makeParserState str)
 								  val result = p1 state in
 							case result of
 								Success(x,rest) => Success(x,rest)
@@ -57,7 +57,7 @@ struct
 		|	Success (x1,rest) => (case p2 rest of
 									Failure x => Failure x
 								  |	Success (x2,final) => Success ((x1,x2),final))
-	fun lift f p1 state = 
+	fun lift f p1 state =
 		case p1 state of
 			Success (x,rest) => Success (f x,rest)
 		|	Failure x => Failure x
@@ -71,35 +71,35 @@ struct
 	fun follow (p1,p2) = lift #1 (seq(p1,p2))
 	fun wrap(p1,p2,p3) = follow(precede(p1,p2),p3)
 	fun separate(p1,p2,p3) = lift (fn ((x,y),z) => (x,z)) (seq(seq(p1,p2),p3))
-	fun oneOf parsers state = 
+	fun oneOf parsers state =
 		let fun inner([],errS,_) = Failure errS
 		     |  inner(p::ps,errS,state) = case p state of
-											Success x => Success x 
+											Success x => Success x
 										  | Failure x => inner(ps,String.concat[errS,x,"\n"],state)
 				in
 					inner(parsers,"",state)
 				end
-	fun until(test,p) state = 
-		let fun inner(test,p,accum) state = 
-			case test state of 
+	fun until(test,p) state =
+		let fun inner(test,p,accum) state =
+			case test state of
 				Success _ => Success(rev accum,state)
 			|	Failure _ => (case p state of
 								Failure x => Failure x
-							|	Success (x,rest) => inner(test,p,x::accum) rest) 
+							|	Success (x,rest) => inner(test,p,x::accum) rest)
 			in
 				inner(test,p,[]) state
 			end
-	fun many1 p state = 
+	fun many1 p state =
 		let fun inner (p,state,accum) =
 			case p state of
-				Failure x => (case accum of 
+				Failure x => (case accum of
 								[] => Failure x
 							|	_ => Success(rev accum,state))
 			|	Success (x,rest) => inner(p,rest,x::accum) in
 				inner(p,state,[])
 			end
-	fun many p state = 
-		case (many1 p) state of 
+	fun many p state =
+		case (many1 p) state of
 			Success x => Success x
 		|	Failure _ => Success([],state)
 	local
@@ -114,11 +114,11 @@ struct
 		fun manyAlt (p1,p2) = lift split (many(alt(p1,p2)))
 	end
 	fun maybe p state =
-			case p state of 
+			case p state of
 				Success (x,rest) => Success(SOME(x),rest)
 			|	Failure x => Success(NONE,state)
-	fun sepBy(p1,p2) state = 
-		let fun inner(p1,p2,accum) state = 
+	fun sepBy(p1,p2) state =
+		let fun inner(p1,p2,accum) state =
 			case p1 state of
 				Failure x => Failure x
 			|	Success (x,rest) => (case p2 rest of
@@ -127,11 +127,11 @@ struct
  		in
 			inner(p1,p2,[]) state
 		end
-	fun transform f p state = 
+	fun transform f p state =
 		case p state of
 			Failure x => Failure x
 		|	Success (x,rest) => onSuccess (fn t => (t,rest)) (f x)
-	fun modifyPosition(c,(line,col)) = 
+	fun modifyPosition(c,(line,col)) =
 		case c of
 			#"\n" => (line + 1,0)
 		|	_ => (line,col + 1)
@@ -140,7 +140,7 @@ struct
 											Success(c,PS(next ss,modifyPosition(c,pos)))
 										end
 							|	true => Failure "End of stream"
-	fun pSymbol (p,msg) state = 
+	fun pSymbol (p,msg) state =
 		case anySymbol state of
 			Failure _ => Failure msg
 		|	Success(x,nstate) => if p(x)
@@ -151,7 +151,7 @@ struct
 	val alphaNum = pSymbol(Char.isAlphaNum,"letter or digit expected")
 	val digit = pSymbol(Char.isDigit,"digit expected")
 	val whitespace = pSymbol(Char.isSpace,"whitespace expected")
-	val stringLiteral = let val quote = symbol #"\"" 
+	val stringLiteral = let val quote = symbol #"\""
 							val p = wrap(quote,until(quote,anySymbol),quote) in
 								lift (String.implode) p
 						end
@@ -160,18 +160,18 @@ struct
 	val identifier = lift (fn (x,y) => case y of
 										SOME(y) => String.concat [x,y]
 									|	NONE => x) (seq(word,maybe number))
-	val integer = 
-		let fun f x = (case Int.fromString(x) of 
+	val integer =
+		let fun f x = (case Int.fromString(x) of
 						SOME(x) => Success(x)
 					|	NONE => Failure "Cannot parse int") in
 							transform f number
 							end
-	val dottedNumber = 
+	val dottedNumber =
 		let fun f((x,y),z) = String.concat([x,Char.toString y,z]) in
 			lift f (seq(seq(number,symbol #"."),number))
 		end
-	
-	val floating = 
+
+	val floating =
 		let fun f x = (case Real.fromString(x) of
 						SOME(x) => Success(x)
 					|	NONE  => Failure "Cannot parse real") in
@@ -213,10 +213,10 @@ sig
 	val many : 'a parser -> ('a list) parser
 	val manyAlt : 'a parser * 'b parser -> ('a list * 'b list) parser
 	val sepBy : 'a parser * 'b parser -> ('a list) parser
-	val transform : ('a -> ('b,string) result) -> 'a parser -> 'b parser 
+	val transform : ('a -> ('b,string) result) -> 'a parser -> 'b parser
 	val separate : 'a parser * 'b parser * 'c parser -> ('a * 'c) parser
 	val alpha : char parser
-	val alphaNum : char parser 
+	val alphaNum : char parser
 	val digit : char parser
 	val whitespace : char parser
 	val stringLiteral : string parser
