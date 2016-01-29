@@ -54,7 +54,7 @@ struct
 	fun parseMessages str = case parse(messages,str) of
 								Failure x => Failure x
 							|	Success(x) => Success(fixMessages x x)
-									handle UndefinedMessage(m) => Failure(String.concat["Undefined message",m])
+									handle UndefinedMessage(m) => Failure(String.concat["Undefined message ",m])
 	val messageParseTest = parseMessages("message Bla { required string a = 1;} message Test { required Bla t = 1;}")
 
 	val rpcParser = precede(

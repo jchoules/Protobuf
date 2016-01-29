@@ -29,8 +29,9 @@ struct
 						Success(x) => x
 					|	Failure x => raise FailureException
 	fun makeParserState str = PS(makeSourceStream str,(0,0))
-	fun withLocation (msg,PS(_,(lineno,colno))) = 
-		String.concat [msg," at line: ",Int.toString lineno]
+	(* TODO: The below is literally useless. Rewrite if time? *)
+	fun withLocation (msg,PS(_,(lineno,colno))) =
+		String.concat [msg," at line: ",Int.toString lineno,", column: ",Int.toString colno]
 	fun printPS (PS((_,x),_)) = print (String.implode x)
 	fun parse (p1,str) = let val state = (makeParserState str) 
 							 val result = p1 state in
@@ -183,7 +184,7 @@ struct
 		|	Success(x,rest) => if(f x)
 							   then Success(x,rest)
 							   else Failure(msg)
-	fun keyword(kw) = force(fn x => x = kw,String.concat["Keyword ",kw],word)
+	fun keyword(kw) = force(fn x => x = kw,String.concat["Keyword '",kw,"' expected"],word)
 end :
 sig
 	type parserState
