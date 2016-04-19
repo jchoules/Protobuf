@@ -4,6 +4,10 @@ struct
 		case String.explode str of 
 			[] => ""
 		|	x::xs => String.implode ((Char.toUpper x)::xs)
+	fun lowerFirst str =
+		case String.explode str of
+			[] => ""
+		|	x::xs => String.implode ((Char.toLower x)::xs)
 	fun numToLetters x = 
 		case x of 
 				#"0" => "Zero"
